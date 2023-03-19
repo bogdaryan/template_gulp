@@ -1,19 +1,18 @@
 'use strict'
-const { src, dest, watch, parallel } = require('gulp')
+const { src, dest, watch, parallel, series } = require('gulp')
 const browserSync = require('browser-sync').create()
 const postcss = require('gulp-postcss');
 const rename = require('gulp-rename');
 
-// Styles
+
 const sourcemaps = require('gulp-sourcemaps');
 const cleanCSS = require('gulp-clean-css');
 const concat = require('gulp-concat')
 const postcssImport = require('postcss-import');
 const postcssNesed = require('postcss-nested');
 const autoprefixer = require('autoprefixer');
-
-// JS
 const uglify = require('gulp-uglify-es').default;
+const gulpClean = require('gulp-clean');
 
 function styles() {
 	return src('./app/pcss/**/*.pcss')
@@ -35,13 +34,10 @@ function styles() {
 
 function scripts() {
 	return src('./app/js/main.js')
-		.pipe(sourcemaps.init())
 		.pipe(concat('main.min.js'))
 		.pipe(uglify())
 		.pipe(dest('./app/js'))
-		.pipe(sourcemaps.write())
 		.pipe(browserSync.stream())
-
 }
 
 function watching() {
@@ -58,9 +54,25 @@ function liveServer() {
 	});
 }
 
+function cleanDist() {
+	return src('dist')
+		.pipe(gulpClean())
+}
+
+function building() {
+	return src([
+		'app/css/style.min.css',
+		'app/js/main.min.js',
+		'app/**/*.html'
+	], { base: 'app' })
+		.pipe(dest('dist'))
+}
+
+
 exports.styles = styles;
 exports.scripts = scripts;
 exports.watching = watching;
 exports.liveServer = liveServer;
 
+exports.build = series(cleanDist, building)
 exports.default = parallel(styles, scripts, liveServer, watching);
